@@ -14,8 +14,6 @@
 char *ssid = WIFI_SSID;
 char *pass = WIFI_PASSWORD;
 
-//typedef unsigned char uchar8_t;
-
 
 /* Callback */
 void onDataEvent(void* data);
