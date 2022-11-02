@@ -27,7 +27,8 @@ void onDataEvent(void *data){
 //	}
 //	printf("\n");
 	for(uint16_t idx = 0; idx < 100*3; idx+=3) {
-        	pixel(dp->data[idx], dp->data[idx+2], dp->data[idx+1]);
+		// WS2811 -> GBR
+        	pixel(dp->data[idx], dp->data[idx+1], dp->data[idx+2]);
 	}
 }
 

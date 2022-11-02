@@ -25,7 +25,7 @@ static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void pixel(uint8_t r, uint8_t g, uint8_t b) {
-	put_pixel(urgb_u32(r,g,b));
+	put_pixel(urgb_u32(g,r,b));
 }
 
 void pattern_snakes(uint len, uint t) {
