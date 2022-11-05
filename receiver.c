@@ -7,11 +7,11 @@
 #include "lwip/netif.h"
 #include "receiver.h"
 
-unsigned char VECTOR_E131_DATA_PACKET[] = {0, 0, 0, 0x02};
+const unsigned char VECTOR_E131_DATA_PACKET[] = {0, 0, 0, 0x02};
 #define VECTOR_E131_DATA_PACKET_OFFSET 40
-unsigned char VECTOR_DMP_SET_PROPERTY = 0x02;
+const unsigned char VECTOR_DMP_SET_PROPERTY = 0x02;
 #define VECTOR_DMP_SET_PROPERTY_OFFSET 117
-unsigned char VECTOR_ROOT_E131_DATA[] = {0, 0, 0, 0x4};
+const unsigned char VECTOR_ROOT_E131_DATA[] = {0, 0, 0, 0x4};
 #define VECTOR_ROOT_E131_DATA_OFFSET 18
 
 //VECTOR_ROOT_E131_EXTENDED = (0, 0, 0, 0x8)
