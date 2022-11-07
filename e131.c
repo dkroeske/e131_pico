@@ -9,6 +9,7 @@
 #include "ws2812.h"
 #include "ws2812.pio.h"
 #include "receiver.h"
+#include "artnet.h"
 
 // SSID and PASS for Wifi connection, options given by -D cmake
 char *ssid = WIFI_SSID;
@@ -55,9 +56,14 @@ int main() {
 		printf("Failed to connect\n");
 	}
 
+	// Init Artnet handling discovery protocol
+	initArtNet(NULL, NULL);
+
 	// Connect to UDP with callback and e131 datapacket
 	E131_DATAPACKET_STRUCT datapacket;
 	initUDPReceiver(onDataEvent, &datapacket);
+
+	
 
 	// Init pixels
 	ws2812_init();

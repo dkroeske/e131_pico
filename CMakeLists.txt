@@ -18,6 +18,7 @@ add_executable(e131
 	e131.c
 	ws2812.c
 	receiver.c
+	artnet.c
 )
 
 #

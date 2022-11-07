@@ -29,7 +29,7 @@ void e131_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *
 struct udp_pcb *upcb;
 
 // Holder for callback function
-void(*onDataAvailable)(void *) = NULL;
+static void(*onDataAvailable)(void *) = NULL;
 // Reference to datapacket
 E131_DATAPACKET_STRUCT *datapacket = NULL;
 
