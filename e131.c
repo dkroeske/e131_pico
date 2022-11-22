@@ -6,15 +6,23 @@
 #include "lwip/udp.h"
 #include "lwip/pbuf.h"
 #include "lwip/netif.h"
+#include "common.h"
 #include "ws2812.h"
 #include "ws2812.pio.h"
 #include "receiver.h"
 #include "artnet.h"
+#include "web.h"
+#include "ff.h"
+#include "diskio.h"
+#include "f_util.h"
+#include "hw_config.h"
+#include "config.h"
 
 // SSID and PASS for Wifi connection, options given by -D cmake
 char *ssid = WIFI_SSID;
 char *pass = WIFI_PASSWORD;
 
+// Global var's
 
 /* Callback */
 void onDataEvent(void* data);
@@ -38,37 +46,62 @@ void onDataEvent(void *data){
  * Set up Wifi and init UDP receiver
  */
 int main() {
+
+ 	int retval = OK;
+
 	stdio_init_all();
+	sleep_ms(2000);
+	
+	stdio_flush();
+	printf("Pico Pixelcontroller\n");
 
-	sleep_ms(500);
-	printf("Simple E131 pixelcontroller\n");
-
-	// Init WiFi with given credentials
-	if( cyw43_arch_init() ) {
-		printf("Failed to initialize\n");
+	// Read config from SD
+	if( OK != config_init("config.txt") ) {
+		retval = NOK;
 	}
 
-	// ... and connect to AP
-	cyw43_arch_enable_sta_mode();
-	if( !cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-		printf("IP = %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
-	} else {
-		printf("Failed to connect\n");
+	printf("retval = %s\n", retval==OK?"OK":"NOK");
+	
+	// Connect to AP
+	if( OK == retval ) {
+		// Init WiFi with given credentials
+		if( cyw43_arch_init() ) {
+			retval = NOK;
+			printf("Failed to initialize\n");
+		}
+
+		// ... and connect to AP
+		cyw43_arch_enable_sta_mode();
+		if( !cyw43_arch_wifi_connect_timeout_ms(
+			config_get_ssid(),
+			config_get_password(),
+			CYW43_AUTH_WPA2_AES_PSK, 
+			30000)) {
+			printf("IP = %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+		} else {
+			retval = NOK;
+			printf("Failed to connect\n");
+		}
 	}
 
-	// Init Artnet handling discovery protocol
-	initArtNet(NULL, NULL);
+	// Init services
+	if( OK == retval ) {
+		// Init and start webserver:80
+		init_web();
 
-	// Connect to UDP with callback and e131 datapacket
-	E131_DATAPACKET_STRUCT datapacket;
-	initUDPReceiver(onDataEvent, &datapacket);
+		// Init Artnet handling discovery protocol
+		initArtNet(NULL, NULL);
 
+		// Connect to UDP with callback and e131 datapacket
+		E131_DATAPACKET_STRUCT datapacket;
+		initUDPReceiver(onDataEvent, &datapacket);
+	}
 	
 
 	// Init pixels
 	ws2812_init();
 
-	uint8_t t = 0;
+	uint16_t t = 0;
 
 	pixel(0xFF,0,0);
 	pixel(0xFF,0,0);
@@ -79,7 +112,8 @@ int main() {
 
 	while(true) {
 	
-		printf("pico_w 0x%.2X\n", t++);
+		printf("pico_w 0x%.4X\n", t++);
 		sleep_ms(5000);
 	}
 }
+

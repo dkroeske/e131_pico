@@ -14,11 +14,17 @@ set(PICO_BOARD pico_w)
 
 pico_sdk_init()
 
+add_subdirectory(lib/FatFs_SPI build)
+add_subdirectory(lib/ly)
+
 add_executable(e131
 	e131.c
 	ws2812.c
 	receiver.c
 	artnet.c
+	web.c
+	hw_config.c
+	config.c
 )
 
 #
@@ -42,11 +48,14 @@ target_include_directories(e131 PRIVATE
 
 target_link_libraries(e131
        	pico_stdlib 
-	pico_util 
+	pico_util
+	FatFs_SPI
+	ly
 	hardware_spi
 	hardware_clocks
 	# pico_cyw43_arch_lwip_poll
 	pico_cyw43_arch_lwip_threadsafe_background
+	pico_lwip_http
 )
 
 
