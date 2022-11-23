@@ -30,17 +30,6 @@ int config_init(const char *file_name) {
 
 	int retval = OK;
 
-	// Mount SD card if possible 
-	if( OK == retval ) {
-		sd_card_t *pSD = sd_get_by_num(0);
-		FRESULT fr = f_mount(&pSD->fatfs, pSD->pcName, 1);
-		if( FR_OK != fr ) {
-			retval = NOK;
-		} else {
-			sleep_ms(250);
-		}
-	}
-
 	// Open config file and parse config
 	if( OK == retval ) {
 
@@ -61,10 +50,8 @@ int config_init(const char *file_name) {
 			yy_switch_to_buffer(bs);
 			yyparse(&config);
 			
-			printf("%s\n", config.ssid);
-			printf("%s\n", config.password);
-			
 		} 
+		f_close(&fp);
 	} 
 	
 	return retval;

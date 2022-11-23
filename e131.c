@@ -23,9 +23,16 @@ char *ssid = WIFI_SSID;
 char *pass = WIFI_PASSWORD;
 
 // Global var's
+struct rgb_led {
+	uint8_t r, g, b;
+};
+
+// Function prototypes
+void handle_idle();
+int mount_sd(void);
 
 /* Callback */
-void onDataEvent(void* data);
+//void onDataEvent(void* data);
 
 void onDataEvent(void *data){
 	
@@ -36,8 +43,7 @@ void onDataEvent(void *data){
 //	}
 //	printf("\n");
 	for(uint16_t idx = 0; idx < 100*3; idx+=3) {
-		// WS2811 -> GBR
-        	pixel(dp->data[idx], dp->data[idx+1], dp->data[idx+2]);
+		pixel(dp->data[idx], dp->data[idx+1], dp->data[idx+2]);
 	}
 }
 
@@ -55,14 +61,22 @@ int main() {
 	stdio_flush();
 	printf("Pico Pixelcontroller\n");
 
-	// Read config from SD
-	if( OK != config_init("config.txt") ) {
-		retval = NOK;
+	// 
+	// Try mount SD card. Essential for WIFI connection 
+	// and idle sequence
+	//
+	retval = mount_sd();
+
+	//
+	// Read config from SD.
+	//
+	if( OK == retval ) {
+		retval =  config_init("config.txt");
 	}
 
-	printf("retval = %s\n", retval==OK?"OK":"NOK");
-	
+	// 
 	// Connect to AP
+	//
 	if( OK == retval ) {
 		// Init WiFi with given credentials
 		if( cyw43_arch_init() ) {
@@ -84,7 +98,7 @@ int main() {
 		}
 	}
 
-	// Init services
+	// Init services web, e131 and artnet
 	if( OK == retval ) {
 		// Init and start webserver:80
 		init_web();
@@ -98,22 +112,85 @@ int main() {
 	}
 	
 
+	// 
 	// Init pixels
+	//
 	ws2812_init();
 
+	// 
+	// Enter main loop
+	//
 	uint16_t t = 0;
-
-	pixel(0xFF,0,0);
-	pixel(0xFF,0,0);
-	pixel(0,0xFF,0);
-	pixel(0,0xFF,0);
-	pixel(0,0,0xFF);
-	pixel(0,0,0xFF);
-
 	while(true) {
-	
+
+		handle_idle();	
 		printf("pico_w 0x%.4X\n", t++);
 		sleep_ms(5000);
 	}
 }
+
+
+/*
+ * Try to mount SD card.
+ */
+int mount_sd(void) {
+
+	int retval = OK;
+		
+	// Mount SD card if possible 
+	if( OK == retval ) {
+		sd_card_t *pSD = sd_get_by_num(0);
+		FRESULT fr = f_mount(&pSD->fatfs, pSD->pcName, 1);
+		if( FR_OK != fr ) {
+			retval = NOK;
+		} else {
+			sleep_ms(250);
+		}
+	}
+	return retval;
+}
+
+
+#define NR_LEDS 100
+
+/* 
+ * Handle idle loop
+ */
+void handle_idle() {
+
+	uint8_t idx = 0;
+	uint8_t buf[NR_LEDS*3];
+
+	FIL fp;
+	FRESULT fr = f_open(&fp, "idle.eseq", FA_READ);
+	if( FR_OK != fr ) {
+	} else {
+		struct rgb_led led;
+		while(1==1) {
+
+			// Skip header in eseq file
+			f_lseek(&fp, 20);
+			do {
+		
+				// Read up NR_LEDS
+				f_read(&fp, buf, NR_LEDS*3, NULL);
+	      	
+				// Playback
+				for(int idx = 0; idx < NR_LEDS*3; idx+=3) {
+					pixel(buf[idx], buf[idx+1], buf[idx+2]);
+				}
+
+				// looptime
+				sleep_ms(25);
+
+			} while(!f_eof(&fp));
+			
+			f_rewind(&fp);
+		}
+	}
+	f_close(&fp);
+}
+  
+
+
 
