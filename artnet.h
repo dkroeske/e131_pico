@@ -5,7 +5,7 @@
 
 #define ARTNET_DISCOVERY_PORT 6454
 
-int initArtNet( void(*cb)(void *), void *data);
+int initArtNet( void(*cb)(void *) );
 
 struct ArtPoll {
 	char ID[8];

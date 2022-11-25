@@ -23,28 +23,32 @@ char *ssid = WIFI_SSID;
 char *pass = WIFI_PASSWORD;
 
 // Global var's
-struct rgb_led {
-	uint8_t r, g, b;
-};
+bool idle_loop = true;
 
 // Function prototypes
 void handle_idle();
 int mount_sd(void);
+void onDataEvent(void* data);
 
-/* Callback */
-//void onDataEvent(void* data);
 
+/*
+ * Callback
+ */
 void onDataEvent(void *data){
-	
-	E131_DATAPACKET_STRUCT *dp = (E131_DATAPACKET_STRUCT *)data;
-//	printf("(%d): ", dp->sequence );
-//	for( uint8_t idx = 0; idx < 9; idx++ ) {
-//		printf("0x%.2X ", dp->data[idx]);
+
+	DMX_DATAPACKET_STRUCT *dp = (DMX_DATAPACKET_STRUCT *)data;
+//	printf("(%.4d): ", dp->sequence );
+//	for( uint8_t idx = 0; idx < 4; idx++ ) {
+//		printf("0x%.2X ", dp->datap[idx]);
 //	}
 //	printf("\n");
-	for(uint16_t idx = 0; idx < 100*3; idx+=3) {
-		pixel(dp->data[idx], dp->data[idx+1], dp->data[idx+2]);
+	for(uint16_t idx = 0; idx < NR_LEDS*3; idx+=3) {
+		pixel(dp->datap[idx], dp->datap[idx+1], dp->datap[idx+2]);
 	}
+
+	// Mark idleloop = false;
+	idle_loop = false;
+
 }
 
 
@@ -104,11 +108,10 @@ int main() {
 		init_web();
 
 		// Init Artnet handling discovery protocol
-		initArtNet(NULL, NULL);
+		initArtNet(onDataEvent);
 
 		// Connect to UDP with callback and e131 datapacket
-		E131_DATAPACKET_STRUCT datapacket;
-		initUDPReceiver(onDataEvent, &datapacket);
+		initE131(onDataEvent);
 	}
 	
 
@@ -122,8 +125,12 @@ int main() {
 	//
 	uint16_t t = 0;
 	while(true) {
-
-		handle_idle();	
+		
+		// Check is idle_loop can be executed
+		if(true == idle_loop){
+			handle_idle();	
+		}		
+	
 		printf("pico_w 0x%.4X\n", t++);
 		sleep_ms(5000);
 	}
@@ -151,8 +158,6 @@ int mount_sd(void) {
 }
 
 
-#define NR_LEDS 100
-
 /* 
  * Handle idle loop
  */
@@ -164,16 +169,16 @@ void handle_idle() {
 	FIL fp;
 	FRESULT fr = f_open(&fp, "idle.eseq", FA_READ);
 	if( FR_OK != fr ) {
+		printf("Error open idle.eseq\n");
 	} else {
-		struct rgb_led led;
-		while(1==1) {
+		while(idle_loop) {
 
 			// Skip header in eseq file
 			f_lseek(&fp, 20);
 			do {
 		
 				// Read up NR_LEDS
-				f_read(&fp, buf, NR_LEDS*3, NULL);
+				f_read(&fp, buf, NR_LEDS_IDLE_LOOP*3, NULL);
 	      	
 				// Playback
 				for(int idx = 0; idx < NR_LEDS*3; idx+=3) {
@@ -183,7 +188,7 @@ void handle_idle() {
 				// looptime
 				sleep_ms(25);
 
-			} while(!f_eof(&fp));
+			} while(!f_eof(&fp) && idle_loop);
 			
 			f_rewind(&fp);
 		}

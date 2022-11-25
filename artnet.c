@@ -5,6 +5,7 @@
 #include "lwip/udp.h"
 #include "lwip/pbuf.h"
 #include "lwip/netif.h"
+#include "common.h"
 #include "artnet.h"
 #include "ws2812.h"
 
@@ -77,20 +78,22 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 
 		// ArtDmx
 		case 0x5000: {
-			uint16_t n = data[16]<<8+data[17];
-			struct ArtDmx dmx;
-			
-			memcpy((uint8_t *)&dmx, data, n);
-			
-			for(uint16_t idx = 0; idx < 100*3; idx+=3) {
-		        	pixel(dmx.Data[idx], dmx.Data[idx+1], dmx.Data[idx+2]);
-			}
-		
-		//	for(uint16_t idx = 0; idx <20; idx++) {
-		//		printf("%.2X ", dmx.Data[idx]);
-		//	}		
-		//	printf("*\n");
 
+			struct ArtDmx dmx;
+
+			/* Fast fill ArtDmx struct and convert payload to ArtDmx */
+			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx));
+			
+			/* Construct general DMX packet */			
+			DMX_DATAPACKET_STRUCT dp;
+			dp.sequence = dmx.Sequence;
+			dp.datap = dmx.Data; 
+
+			/* Call back to proces */
+			if( NULL != onDataAvailable) {
+				onDataAvailable(&dp);
+			}
+					
 			break;
 		}
 		
@@ -103,7 +106,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 /*
  * Init UDP interface
  */
-int initArtNet( void(*cb)(void *), void *data)
+int initArtNet( void(*cb)(void *) )
 {
 	// Save callback and holder datapacket
 	onDataAvailable = cb;
@@ -112,9 +115,8 @@ int initArtNet( void(*cb)(void *), void *data)
 	pcb = udp_new();
 
 	// Bind to port Artnet discovery port
-   	err_t err = udp_bind(pcb, IP_ADDR_ANY, ARTNET_DISCOVERY_PORT);
+  	err_t err = udp_bind(pcb, IP_ADDR_ANY, ARTNET_DISCOVERY_PORT);
 
-	
 	// Start receiver and set callback
 	udp_recv(pcb, artnet_recv, NULL);
 	
