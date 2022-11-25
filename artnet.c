@@ -46,9 +46,13 @@ void handleArtDiscovery(uint8_t *data, struct ArtPollReply *reply) {
 	reply->Port = 0x1936; 	// 0x1936, LSB first
 	reply->VersInfoH = 0x01;
 	reply->VersInfoL = 0x00;
-	strcpy(reply->ShortName, "PC_V1.0");
-	sprintf(reply->NodeReport, "#0001 %.4d 0001 dkroeske@gmail.com", nrArtPollResponses++);
+	strcpy(reply->ShortName, "PicoPixelz");
+	strcpy(reply->LongName, "PicoPixelz by dkroeske@gmail.com");
+	sprintf(reply->NodeReport, "#0001 %.4d 0001 by dkroeske@gmail.com", nrArtPollResponses++);
+	reply->NumPortsHi = 0x00; // Always zero
+	reply->NumPortsLo = 0x01; // Always zero
 	reply->PortTypes[0] = 0x80; // 1 input, DMX512
+	reply->SwOut[0] = 0x05;	// Xlights presents universe 1
 }
 
 /*
