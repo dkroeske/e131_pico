@@ -23,7 +23,7 @@ char *ssid = WIFI_SSID;
 char *pass = WIFI_PASSWORD;
 
 // Global var's
-bool idle_loop = true;
+bool idle_loop = false;
 
 // Function prototypes
 void handle_idle();

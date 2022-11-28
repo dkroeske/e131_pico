@@ -15,6 +15,11 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 // UDP holder
 struct udp_pcb *pcb;
 
+#define ARTDMX_BUFFER_LENGHT 4
+struct ArtDmx artdmx[ARTDMX_BUFFER_LENGHT];
+uint8_t artdmx_index = 0;
+uint8_t p_sequence = 0;
+
 // Holder for callback function
 static void(*onDataAvailable)(void *) = NULL;
 static uint8_t nrArtPollResponses = 0;
@@ -77,29 +82,62 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 			udp_sendto(pcb, tx_buff, addr, ARTNET_DISCOVERY_PORT);
 			pbuf_free(tx_buff);
 			cyw43_arch_lwip_end();
-			break;
 		}	
+		break;
 
 		// ArtDmx
 		case 0x5000: {
-
-			struct ArtDmx dmx;
-
-			/* Fast fill ArtDmx struct and convert payload to ArtDmx */
-			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx));
 			
-			/* Construct general DMX packet */			
-			DMX_DATAPACKET_STRUCT dp;
-			dp.sequence = dmx.Sequence;
-			dp.datap = dmx.Data; 
+			struct ArtDmx dmx = {};
+			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx) );
 
-			/* Call back to proces */
-			if( NULL != onDataAvailable) {
-				onDataAvailable(&dp);
-			}
+			/* Check if within universe */
+			if( dmx.SubUni >= 5 && dmx.SubUni < 5+ARTDMX_BUFFER_LENGHT ) {
+			
+				if( p_sequence != dmx.Sequence ) {
+					for(uint16_t idx = 0; idx < NR_LEDS*3; idx+=3) {
+						uint8_t r,g,b;
+						r = artdmx[idx/512].Data[idx%512];
+						g = artdmx[(idx+1)/512].Data[(idx+1)%512];
+						b = artdmx[(idx+2)/512].Data[(idx+2)%512];
+						pixel(r,g,b);
+					}
+
+//					for(uint8_t idx = 0; idx < artdmx_index+1; idx++) {
+//						printf("SubUni %.2d: Sequence: %.2d\n", artdmx[idx].SubUni, artdmx[idx].Sequence);
+//					}
 					
-			break;
+					artdmx_index = 0;
+					artdmx[artdmx_index] = dmx;
+				} else {
+					if(artdmx_index < ARTDMX_BUFFER_LENGHT) {
+						artdmx_index++ ;
+						artdmx[artdmx_index] = dmx;
+					}
+				}	
+				p_sequence = dmx.Sequence;
+			}
 		}
+		break;	
+
+// OUD
+//			struct ArtDmx dmx;
+//
+//			/* Fast fill ArtDmx struct and convert payload to ArtDmx */
+//			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx));
+//			
+//			/* Construct general DMX packet */			
+//			DMX_DATAPACKET_STRUCT dp;
+//			dp.sequence = dmx.Sequence;
+//			dp.datap = dmx.Data; 
+//
+//			/* Call back to proces */
+//			if( NULL != onDataAvailable) {
+//				onDataAvailable(&dp);
+//			}
+//					
+//			break;
+//		}
 		
 	}
 
