@@ -26,6 +26,9 @@ int config_get_universe(void){
 	return config.universe;
 }
 
+int config_get_nr_leds(void) {
+}
+
 int config_init(const char *file_name) {
 
 	int retval = OK;

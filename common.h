@@ -10,7 +10,9 @@
 // DMX_datapacket
 typedef struct {
 	uint8_t sequence;
+	uint8_t universe;
 	uint8_t *datap;
+	uint8_t data[10];
 } DMX_DATAPACKET_STRUCT;
 
 #endif

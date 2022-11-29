@@ -6,6 +6,7 @@
 #include "lwip/pbuf.h"
 #include "lwip/netif.h"
 #include "common.h"
+#include "config.h"
 #include "artnet.h"
 #include "ws2812.h"
 
@@ -15,7 +16,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 // UDP holder
 struct udp_pcb *pcb;
 
-#define ARTDMX_BUFFER_LENGHT 4
+#define ARTDMX_BUFFER_LENGHT 8
 struct ArtDmx artdmx[ARTDMX_BUFFER_LENGHT];
 uint8_t artdmx_index = 0;
 uint8_t p_sequence = 0;
@@ -87,14 +88,18 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 
 		// ArtDmx
 		case 0x5000: {
-			
+			// Get and covert rx data to ArtDmx			
 			struct ArtDmx dmx = {};
 			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx) );
 
-			/* Check if within universe */
-			if( dmx.SubUni >= 5 && dmx.SubUni < 5+ARTDMX_BUFFER_LENGHT ) {
+			// Get and check if ArtDmx in within universe
+			int universe = config_get_universe();
+			if( (dmx.SubUni >= universe) && (dmx.SubUni < (universe+ARTDMX_BUFFER_LENGHT)) ) {
 			
+				// If so play leds every time sequence changes. Save multiple 512 DMX-
+				// frames
 				if( p_sequence != dmx.Sequence ) {
+					// For all leds map led-number to 512 dmx buffers
 					for(uint16_t idx = 0; idx < NR_LEDS*3; idx+=3) {
 						uint8_t r,g,b;
 						r = artdmx[idx/512].Data[idx%512];
