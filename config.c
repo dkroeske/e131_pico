@@ -9,26 +9,39 @@
 #include "f_util.h"
 #include "hw_config.h"
 #include "config.h"
-#include "settings.h"
+#include "config_parser.h"
 #include "lex.yy.h"
 
 CONFIG_STRUCT config;
 
 char* config_get_ssid(void){
-	return config.ssid;
+	return config.wifi_ssid;
 }
 
 char* config_get_password(void){
-	return config.password;
+	return config.wifi_password;
 }
 
 int config_get_universe(void){
-	return config.universe;
+	return config.dmx_universe;
 }
 
 int config_get_nr_leds(void) {
+	return config.dmx_nrleds;
 }
 
+int config_get_idle_enable(void) {
+	return config.dmx_nrleds;
+}
+
+CONFIG_STRUCT get_config() {
+	return config;
+}
+
+
+//
+// Read config from sd-card
+//
 int config_init(const char *file_name) {
 
 	int retval = OK;
@@ -58,4 +71,21 @@ int config_init(const char *file_name) {
 	} 
 	
 	return retval;
+}
+
+//
+// Show config
+//
+void config_show(void) {
+
+	/* Print config */
+	printf("---- CONFIG ----\n");
+	printf("wifi ssid:%s\n", config.wifi_ssid);
+	printf("wifi password:%s\n", config.wifi_password);
+	printf("dmx universe:%d\n", config.dmx_universe);
+	printf("dmx nrleds:%d\n", config.dmx_nrleds);
+	printf("idle filename:%s\n", config.idle_filename);
+	printf("idle framerate:%d\n", config.idle_framerate);
+	printf("idle enabled:%d\n", config.idle_enabled);
+	printf("\n");
 }

@@ -7,4 +7,5 @@ char* config_get_password(void);
 int config_get_universe(void);
 int config_get_nr_leds(void); 
 
+void config_show(void);
 #endif

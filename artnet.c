@@ -16,8 +16,8 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 // UDP holder
 struct udp_pcb *pcb;
 
-#define ARTDMX_BUFFER_LENGHT 8
-struct ArtDmx artdmx[ARTDMX_BUFFER_LENGHT];
+// Up to ARTNET_MAX_UNIVERSES * 512 bytes hold a single channel
+struct ArtDmx artdmx[ARTNET_MAX_UNIVERSES];
 uint8_t artdmx_index = 0;
 uint8_t p_sequence = 0;
 
@@ -58,7 +58,8 @@ void handleArtDiscovery(uint8_t *data, struct ArtPollReply *reply) {
 	reply->NumPortsHi = 0x00; // Always zero
 	reply->NumPortsLo = 0x01; // Always zero
 	reply->PortTypes[0] = 0x80; // 1 input, DMX512
-	reply->SwOut[0] = 0x05;	// Xlights presents universe 1
+	
+	reply->SwOut[0] = config_get_universe(); // Xlights presents universe 
 }
 
 /*
@@ -71,6 +72,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 	// 
 	uint16_t OpCode = data[9]<<8+data[8];
 	switch( OpCode ) {
+		// ArtPoll
 		case 0x2000: {
 			// Construct ArtNet reply
 			struct ArtPollReply reply = {};
@@ -94,13 +96,14 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 
 			// Get and check if ArtDmx in within universe
 			int universe = config_get_universe();
-			if( (dmx.SubUni >= universe) && (dmx.SubUni < (universe+ARTDMX_BUFFER_LENGHT)) ) {
+			if( (dmx.SubUni >= universe) && (dmx.SubUni < (universe+ARTNET_MAX_UNIVERSES)) ) {
 			
 				// If so play leds every time sequence changes. Save multiple 512 DMX-
 				// frames
 				if( p_sequence != dmx.Sequence ) {
 					// For all leds map led-number to 512 dmx buffers
-					for(uint16_t idx = 0; idx < NR_LEDS*3; idx+=3) {
+					unsigned int nr_leds = config_get_nr_leds();
+					for(uint16_t idx = 0; idx < nr_leds*3; idx+=3) {
 						uint8_t r,g,b;
 						r = artdmx[idx/512].Data[idx%512];
 						g = artdmx[(idx+1)/512].Data[(idx+1)%512];
@@ -115,7 +118,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 					artdmx_index = 0;
 					artdmx[artdmx_index] = dmx;
 				} else {
-					if(artdmx_index < ARTDMX_BUFFER_LENGHT) {
+					if(artdmx_index < ARTNET_MAX_UNIVERSES) {
 						artdmx_index++ ;
 						artdmx[artdmx_index] = dmx;
 					}
@@ -124,26 +127,6 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 			}
 		}
 		break;	
-
-// OUD
-//			struct ArtDmx dmx;
-//
-//			/* Fast fill ArtDmx struct and convert payload to ArtDmx */
-//			memcpy( (uint8_t *)&dmx, data, sizeof(struct ArtDmx));
-//			
-//			/* Construct general DMX packet */			
-//			DMX_DATAPACKET_STRUCT dp;
-//			dp.sequence = dmx.Sequence;
-//			dp.datap = dmx.Data; 
-//
-//			/* Call back to proces */
-//			if( NULL != onDataAvailable) {
-//				onDataAvailable(&dp);
-//			}
-//					
-//			break;
-//		}
-		
 	}
 
 	// Mandatory
@@ -155,7 +138,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
  */
 int initArtNet( void(*cb)(void *) )
 {
-	// Save callback and holder datapacket
+	// Save callback 
 	onDataAvailable = cb;
 
 	// Setup new UDP connection

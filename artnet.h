@@ -4,6 +4,7 @@
 #define ARTNET_INC
 
 #define ARTNET_DISCOVERY_PORT 6454
+#define ARTNET_MAX_UNIVERSES	8
 
 int initArtNet( void(*cb)(void *) );
 

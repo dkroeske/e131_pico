@@ -37,17 +37,12 @@ pico_enable_stdio_uart(e131 1)
 
 pico_add_extra_outputs(e131)
 
-target_compile_definitions(e131 PRIVATE
-	WIFI_SSID=\"${WIFI_SSID}\"
-	WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
-	)
-
 target_include_directories(e131 PRIVATE 
 	${CMAKE_CURRENT_LIST_DIR}
 	)
 
 target_link_libraries(e131
-       	pico_stdlib 
+  	pico_stdlib 
 	pico_util
 	FatFs_SPI
 	ly

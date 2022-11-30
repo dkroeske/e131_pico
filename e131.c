@@ -19,8 +19,8 @@
 #include "config.h"
 
 // SSID and PASS for Wifi connection, options given by -D cmake
-char *ssid = WIFI_SSID;
-char *pass = WIFI_PASSWORD;
+//char *ssid = WIFI_SSID;
+//char *pass = WIFI_PASSWORD;
 
 // Global var's
 bool idle_loop = false;
@@ -36,13 +36,15 @@ void onDataEvent(void* data);
  */
 void onDataEvent(void *data){
 
+	unsigned int nr_leds = config_get_nr_leds();
+
 	DMX_DATAPACKET_STRUCT *dp = (DMX_DATAPACKET_STRUCT *)data;
 //	printf("(%.4d): ", dp->sequence );
 //	for( uint8_t idx = 0; idx < 4; idx++ ) {
 //		printf("0x%.2X ", dp->datap[idx]);
 //	}
 //	printf("\n");
-	for(uint16_t idx = 0; idx < NR_LEDS*3; idx+=3) {
+	for(uint16_t idx = 0; idx < nr_leds*3; idx+=3) {
 		pixel(dp->datap[idx], dp->datap[idx+1], dp->datap[idx+2]);
 	}
 
@@ -76,6 +78,7 @@ int main() {
 	//
 	if( OK == retval ) {
 		retval =  config_init("config.txt");
+		config_show();
 	}
 
 	// 
@@ -164,7 +167,9 @@ int mount_sd(void) {
 void handle_idle() {
 
 	uint8_t idx = 0;
-	uint8_t buf[NR_LEDS*3];
+	unsigned int nr_leds = config_get_nr_leds();
+//	uint8_t buf[*3];
+	uint8_t *buf = (uint8_t *)malloc(nr_leds * 3 * sizeof(uint8_t));
 
 	FIL fp;
 	FRESULT fr = f_open(&fp, "idle.eseq", FA_READ);
@@ -178,10 +183,10 @@ void handle_idle() {
 			do {
 		
 				// Read up NR_LEDS
-				f_read(&fp, buf, NR_LEDS_IDLE_LOOP*3, NULL);
+				f_read(&fp, buf, nr_leds*3, NULL);
 	      	
 				// Playback
-				for(int idx = 0; idx < NR_LEDS*3; idx+=3) {
+				for(int idx = 0; idx < nr_leds*3; idx+=3) {
 					pixel(buf[idx], buf[idx+1], buf[idx+2]);
 				}
 
@@ -194,8 +199,8 @@ void handle_idle() {
 		}
 	}
 	f_close(&fp);
+	free(buf);
 }
   
-
 
 
