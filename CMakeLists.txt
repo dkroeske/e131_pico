@@ -5,7 +5,7 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt)
 
 #
-project(e131 C CXX ASM)
+project(picopixelz C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -17,10 +17,10 @@ pico_sdk_init()
 add_subdirectory(lib/FatFs_SPI build)
 add_subdirectory(lib/ly)
 
-add_executable(e131
+add_executable(picopixelz
+	ppixelz.c
 	e131.c
 	ws2812.c
-	receiver.c
 	artnet.c
 	web.c
 	hw_config.c
@@ -32,16 +32,16 @@ pico_generate_pio_header(${PROJECT_NAME}
     ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio
 )
 
-pico_enable_stdio_usb(e131 1)
-pico_enable_stdio_uart(e131 1)
+pico_enable_stdio_usb(picopixelz 1)
+pico_enable_stdio_uart(picopixelz 1)
 
-pico_add_extra_outputs(e131)
+pico_add_extra_outputs(picopixelz)
 
-target_include_directories(e131 PRIVATE 
+target_include_directories(picopixelz PRIVATE 
 	${CMAKE_CURRENT_LIST_DIR}
 	)
 
-target_link_libraries(e131
+target_link_libraries(picopixelz
   	pico_stdlib 
 	pico_util
 	FatFs_SPI

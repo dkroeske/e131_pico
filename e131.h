@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#ifndef RECEIVER_INC
-#define RECEIVER_INC
+#ifndef E131_INC
+#define E131_INC
 
 #define E131_PORT 5568	// default E1.31 port (sACN protocol)
 
