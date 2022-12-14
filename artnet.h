@@ -8,6 +8,14 @@
 
 int initArtNet( void(*cb)(void *) );
 
+struct ArtNetStatus {
+	bool dirty;
+	uint64_t	last_update;
+};
+
+struct ArtNetStatus artnet_status(void);
+
+
 struct ArtPoll {
 	char ID[8];
 	uint16_t OpCode;

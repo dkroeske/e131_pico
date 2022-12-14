@@ -25,6 +25,12 @@ uint8_t p_sequence = 0;
 static void(*onDataAvailable)(void *) = NULL;
 static uint8_t nrArtPollResponses = 0;
 
+//
+struct ArtNetStatus art_status = {false, 0};
+struct ArtNetStatus artnet_status(void){
+	return art_status;
+}
+
 /*
  * ArtPoll received, reply with ArtPollReply
  */
@@ -32,8 +38,8 @@ void handleArtDiscovery(uint8_t *data, struct ArtPollReply *reply) {
 	
 	// Get the Artpoll ...
 	struct ArtPoll artpoll = {};
-	strncpy(artpoll.ID, data, 8);
-	artpoll.OpCode = data[8] + data[9]<<8;	
+	strncpy(artpoll.ID, (char*)data, 8);
+	artpoll.OpCode = (data[8] + (data[9]<<8));	
 	artpoll.ProtVerHi = data[10];	
 	artpoll.ProtVerLo = data[11];	
 	artpoll.Flags = data[12];
@@ -70,7 +76,7 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 	uint8_t *data = (unsigned char*)p->payload;
 	
 	// 
-	uint16_t OpCode = data[9]<<8+data[8];
+	uint16_t OpCode = ((data[9]<<8)+data[8]);
 	switch( OpCode ) {
 		// ArtPoll
 		case 0x2000: {
@@ -125,12 +131,18 @@ void artnet_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t
 				}	
 				p_sequence = dmx.Sequence;
 			}
+
 		}
 		break;	
 	}
 
 	// Mandatory
 	pbuf_free(p);
+
+
+	// Update time
+	art_status.dirty = true;
+	art_status.last_update = time_us_64();
 }
 
 /*
@@ -146,9 +158,15 @@ int initArtNet( void(*cb)(void *) )
 
 	// Bind to port Artnet discovery port
   	err_t err = udp_bind(pcb, IP_ADDR_ANY, ARTNET_DISCOVERY_PORT);
-
-	// Start receiver and set callback
-	udp_recv(pcb, artnet_recv, NULL);
 	
-	return true;
+	// Start receiver and set callback if all is ok
+	if(ERR_OK == err) {
+		udp_recv(pcb, artnet_recv, NULL);
+	}
+	
+	if(ERR_OK == err) {
+		return OK;
+	} else {
+		return NOK;
+	}
 }

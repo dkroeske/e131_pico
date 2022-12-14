@@ -18,18 +18,13 @@
 #include "hw_config.h"
 #include "config.h"
 
-// SSID and PASS for Wifi connection, options given by -D cmake
-//char *ssid = WIFI_SSID;
-//char *pass = WIFI_PASSWORD;
-
 // Global var's
-bool idle_loop = false;
+bool idle_loop = true;
 
 // Function prototypes
 void handle_idle();
 int mount_sd(void);
 void onDataEvent(void* data);
-
 
 /*
  * Callback
@@ -114,7 +109,7 @@ int main() {
 		initArtNet(onDataEvent);
 
 		// Connect to UDP with callback and e131 datapacket
-		initE131(onDataEvent);
+		//	initE131(onDataEvent);
 	}
 	
 
@@ -126,15 +121,15 @@ int main() {
 	// 
 	// Enter main loop
 	//
-	uint16_t t = 0;
 	while(true) {
 		
-		// Check is idle_loop can be executed
+		// Check is idle_loop can be executed. This loop is blocking
 		if(true == idle_loop){
 			handle_idle();	
 		}		
-	
-		printf("pico_w 0x%.4X\n", t++);
+		
+		// Do something ...
+		printf("Elapsed time [us]: %lld\n", time_us_64());
 		sleep_ms(5000);
 	}
 }
@@ -166,9 +161,7 @@ int mount_sd(void) {
  */
 void handle_idle() {
 
-	uint8_t idx = 0;
 	unsigned int nr_leds = config_get_nr_leds();
-//	uint8_t buf[*3];
 	uint8_t *buf = (uint8_t *)malloc(nr_leds * 3 * sizeof(uint8_t));
 
 	FIL fp;
@@ -188,6 +181,12 @@ void handle_idle() {
 				// Playback
 				for(int idx = 0; idx < nr_leds*3; idx+=3) {
 					pixel(buf[idx], buf[idx+1], buf[idx+2]);
+				
+					// Break idle when artnet msg are received
+					if( true == artnet_status().dirty ) {
+						idle_loop = false;
+						break;
+					}
 				}
 
 				// looptime
